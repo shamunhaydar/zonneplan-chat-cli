@@ -9,7 +9,7 @@
     "ingest": "pnpm build && node dist/ingest.js",
     "chat": "pnpm build && node dist/interactive.js",
     "test-rag": "pnpm build && node dist/chat.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "pnpm build && node dist/tests/rag-tests.js",
     "lint": "biome check src/",
     "lint:fix": "biome check --write src/"
   },
