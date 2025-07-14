@@ -1,4 +1,5 @@
 import { readFile as readFileAsync } from 'node:fs/promises';
+import { Chroma } from '@langchain/community/vectorstores/chroma';
 import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
 import { Document } from 'langchain/document';
 import { MemoryVectorStore } from 'langchain/vectorstores/memory';
@@ -11,9 +12,10 @@ export interface ChatResponse {
 }
 
 export class RAGChatbot {
-  private vectorStore: MemoryVectorStore | null = null;
+  private vectorStore: MemoryVectorStore | Chroma | null = null;
   private llm: ChatOpenAI;
   private embeddings: OpenAIEmbeddings;
+  private usingChroma = false;
 
   constructor() {
     if (!config.openaiApiKey) {
@@ -24,21 +26,46 @@ export class RAGChatbot {
 
     this.llm = new ChatOpenAI({
       openAIApiKey: config.openaiApiKey,
-      modelName: 'gpt-4o-mini',
-      temperature: 0.1,
-      maxTokens: 500,
+      modelName: config.chatModel,
+      temperature: config.temprature,
+      maxTokens: config.maxTokens,
     });
 
     this.embeddings = new OpenAIEmbeddings({
       openAIApiKey: config.openaiApiKey,
-      modelName: 'text-embedding-3-small',
+      modelName: config.embeddingsModel,
     });
   }
 
-  async loadVectorStore(): Promise<void> {
-    console.log('📖 Loading vector store...');
-
+  private async tryConnectToChromaDB(): Promise<Chroma | null> {
     try {
+      console.log('[CHAT] 🔌 Attempting to connect to ChromaDB...');
+      const vectorStore = new Chroma(this.embeddings, {
+        url: `http://${config.chromadb.host}:${config.chromadb.port}`,
+        collectionName: config.chromadb.collectionName,
+      });
+
+      // Test the connection by trying to query
+      await vectorStore.similaritySearch('test', 1);
+      console.log(
+        '[CHAT] ✅ Connected to ChromaDB. Using ChromaDB for retrieval.'
+      );
+      return vectorStore;
+    } catch (error) {
+      console.log(
+        '[CHAT] ❌ Failed to connect to ChromaDB:',
+        (error as Error).message
+      );
+      return null;
+    }
+  }
+
+  private async loadFallbackMemoryStore(): Promise<MemoryVectorStore | null> {
+    try {
+      console.log(
+        "[CHAT] 📖 Attempting to load FAISS from 'vectorstore.faiss.json'..."
+      );
+
       const vectorData = JSON.parse(
         await readFileAsync(`${config.vectorStorePath}.json`, 'utf-8')
       );
@@ -51,16 +78,43 @@ export class RAGChatbot {
           })
       );
 
-      this.vectorStore = await MemoryVectorStore.fromDocuments(
+      const vectorStore = await MemoryVectorStore.fromDocuments(
         documents,
         this.embeddings
       );
-      console.log(`✅ Vector store loaded with ${documents.length} documents`);
-    } catch (error) {
-      throw new Error(
-        `Failed to load vector store: ${error}. Please run 'pnpm ingest' first.`
+      console.log(
+        '[CHAT] ✅ Successfully loaded FAISS from disk. Using FAISS for retrieval.'
       );
+      console.log(`[CHAT] 📊 Loaded ${documents.length} documents from FAISS`);
+      return vectorStore;
+    } catch (_error) {
+      console.log(
+        `[CHAT] ❌ Could not connect to ChromaDB and 'vectorstore.faiss.json' not found. Knowledge base unavailable. Please run ingestion first.`
+      );
+      return null;
     }
+  }
+
+  async loadVectorStore(): Promise<void> {
+    // Try ChromaDB first
+    const chromaStore = await this.tryConnectToChromaDB();
+    if (chromaStore) {
+      this.vectorStore = chromaStore;
+      this.usingChroma = true;
+      return;
+    }
+
+    // Fallback to MemoryVectorStore from JSON
+    const memoryStore = await this.loadFallbackMemoryStore();
+    if (memoryStore) {
+      this.vectorStore = memoryStore;
+      this.usingChroma = false;
+      return;
+    }
+
+    throw new Error(
+      "No vector store available. Please ensure ChromaDB is running or run 'pnpm ingest' to create a local fallback."
+    );
   }
 
   async retrieveRelevantDocuments(
@@ -96,7 +150,8 @@ Antwoord:`;
   }
 
   async generateAnswer(query: string): Promise<ChatResponse> {
-    console.log(`🔍 Processing query: "${query}"`);
+    const storeType = this.usingChroma ? 'ChromaDB' : 'FAISS';
+    console.log(`🔍 Processing query: "${query}" using ${storeType}`);
 
     // Retrieve relevant documents
     const relevantDocs = await this.retrieveRelevantDocuments(query);
@@ -142,6 +197,13 @@ Antwoord:`;
       };
     }
   }
+
+  getVectorStoreInfo(): { type: string; isConnected: boolean } {
+    return {
+      type: this.usingChroma ? 'ChromaDB' : 'FAISS (MemoryVectorStore)',
+      isConnected: this.vectorStore !== null,
+    };
+  }
 }
 
 export async function startChat() {
@@ -149,6 +211,11 @@ export async function startChat() {
 
   const chatbot = new RAGChatbot();
   await chatbot.loadVectorStore();
+
+  const info = chatbot.getVectorStoreInfo();
+  console.log(
+    `📊 Vector store info: ${info.type}, Connected: ${info.isConnected}`
+  );
 
   return chatbot;
 }

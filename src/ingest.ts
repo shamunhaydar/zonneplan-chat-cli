@@ -1,4 +1,6 @@
+import { createHash } from 'node:crypto';
 import {
+  mkdir,
   readdir,
   readFile,
   readFile as readFileAsync,
@@ -6,11 +8,50 @@ import {
 } from 'node:fs/promises';
 import { join } from 'node:path';
 import { CheerioWebBaseLoader } from '@langchain/community/document_loaders/web/cheerio';
+import { Chroma } from '@langchain/community/vectorstores/chroma';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { Document } from 'langchain/document';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { MemoryVectorStore } from 'langchain/vectorstores/memory';
 import { config } from './config.js';
+
+function generateChunkId(
+  content: string,
+  source: string,
+  chunkIndex: number
+): string {
+  const hash = createHash('sha256');
+  hash.update(`${source}-${chunkIndex}-${content}`);
+  return hash.digest('hex');
+}
+
+async function createChromaVectorStore(
+  embeddings: OpenAIEmbeddings
+): Promise<Chroma | null> {
+  try {
+    console.log('[INGEST] 🔌 Attempting to connect to ChromaDB...');
+
+    // Create ChromaDB instance
+    const vectorStore = new Chroma(embeddings, {
+      url: `http://${config.chromadb.host}:${config.chromadb.port}`,
+      collectionName: config.chromadb.collectionName,
+    });
+
+    console.log('[INGEST] ✅ Connected to ChromaDB successfully');
+    return vectorStore;
+  } catch (error) {
+    console.log('[INGEST] ❌ Failed to connect to ChromaDB:', error);
+    return null;
+  }
+}
+
+async function ensureStorageDirectory(): Promise<void> {
+  try {
+    await mkdir('./storage', { recursive: true });
+  } catch (error) {
+    // Directory might already exist, ignore
+  }
+}
 
 export async function loadDocuments(): Promise<Document[]> {
   console.log('Loading documents from:', config.dataPath);
@@ -68,6 +109,7 @@ export async function loadDocuments(): Promise<Document[]> {
                 source: fileName,
                 title: docs[0].metadata.title as string,
                 chunkIndex: index,
+                chunkId: generateChunkId(chunk.pageContent, fileName, index),
               },
             })
         );
@@ -103,6 +145,85 @@ export async function loadDocuments(): Promise<Document[]> {
   }
 }
 
+export async function createVectorStoreWithChromaDB(): Promise<
+  Chroma | MemoryVectorStore
+> {
+  console.log('\n🚀 Creating vector store with ChromaDB...');
+
+  if (!config.openaiApiKey) {
+    throw new Error(
+      'OPENAI_API_KEY is required. Please set it in your .env file.'
+    );
+  }
+
+  const documents = await loadDocuments();
+
+  console.log('\n📈 Creating embeddings...');
+  const embeddings = new OpenAIEmbeddings({
+    openAIApiKey: config.openaiApiKey,
+    modelName: 'text-embedding-3-small',
+  });
+
+  // Try ChromaDB first
+  const chromaStore = await createChromaVectorStore(embeddings);
+  if (chromaStore) {
+    console.log(
+      '[INGEST] 📦 Adding documents to ChromaDB (with idempotency)...'
+    );
+
+    await chromaStore.addDocuments(documents);
+    console.log(
+      `[INGEST] ✅ Successfully ingested ${documents.length} documents into ChromaDB`
+    );
+
+    // Also create fallback JSON store
+    await createFallbackMemoryStore(documents, embeddings);
+
+    return chromaStore;
+  }
+
+  // Fallback to MemoryVectorStore
+  console.log('[INGEST] 📦 Falling back to MemoryVectorStore...');
+  return await createFallbackMemoryStore(documents, embeddings);
+}
+
+async function createFallbackMemoryStore(
+  documents: Document[],
+  embeddings: OpenAIEmbeddings
+): Promise<MemoryVectorStore> {
+  await ensureStorageDirectory();
+
+  console.log('[INGEST] 🏗️ Building Memory vector store...');
+  const vectorStore = await MemoryVectorStore.fromDocuments(
+    documents,
+    embeddings
+  );
+
+  // Save the vector store data as JSON for persistence
+  console.log(
+    `[INGEST] 💾 Saving fallback vector store to: ${config.vectorStorePath}.json`
+  );
+  const vectorData = {
+    documents: documents.map((doc) => ({
+      pageContent: doc.pageContent,
+      metadata: doc.metadata,
+    })),
+    embeddings: await Promise.all(
+      documents.map((doc) => embeddings.embedQuery(doc.pageContent))
+    ),
+  };
+
+  await writeFile(
+    `${config.vectorStorePath}.json`,
+    JSON.stringify(vectorData, null, 2)
+  );
+
+  console.log(
+    '[INGEST] ✅ Fallback vector store created and saved successfully!'
+  );
+  return vectorStore;
+}
+
 export async function createVectorStore(): Promise<MemoryVectorStore> {
   console.log('\n🚀 Phase 3: Creating vector store...');
 
@@ -120,32 +241,7 @@ export async function createVectorStore(): Promise<MemoryVectorStore> {
     modelName: 'text-embedding-3-small',
   });
 
-  console.log('Building Memory vector store (WSL/Windows compatible)...');
-  const vectorStore = await MemoryVectorStore.fromDocuments(
-    documents,
-    embeddings
-  );
-
-  // Save the vector store data as JSON for persistence
-  console.log(`Saving vector store to: ${config.vectorStorePath}.json`);
-  const vectorData = {
-    documents: documents.map((doc) => ({
-      pageContent: doc.pageContent,
-      metadata: doc.metadata,
-    })),
-    embeddings: await Promise.all(
-      documents.map((doc) => embeddings.embedQuery(doc.pageContent))
-    ),
-  };
-
-  await writeFile(
-    `${config.vectorStorePath}.json`,
-    JSON.stringify(vectorData, null, 2)
-  );
-
-  console.log('✅ Vector store created and saved successfully!');
-
-  return vectorStore;
+  return await createFallbackMemoryStore(documents, embeddings);
 }
 
 export async function loadVectorStore(): Promise<MemoryVectorStore> {
@@ -185,7 +281,22 @@ export async function loadVectorStore(): Promise<MemoryVectorStore> {
 export async function testVectorStore(): Promise<void> {
   console.log('\n🧪 Testing vector store...');
 
-  const vectorStore = await loadVectorStore();
+  // Try ChromaDB first, then fallback
+  const embeddings = new OpenAIEmbeddings({
+    openAIApiKey: config.openaiApiKey,
+    modelName: 'text-embedding-3-small',
+  });
+
+  let vectorStore: Chroma | MemoryVectorStore;
+
+  const chromaStore = await createChromaVectorStore(embeddings);
+  if (chromaStore) {
+    console.log('[TEST] 🎯 Testing ChromaDB vector store...');
+    vectorStore = chromaStore;
+  } else {
+    console.log('[TEST] 🎯 Testing fallback MemoryVectorStore...');
+    vectorStore = await loadVectorStore();
+  }
 
   const testQueries = [
     'wat is saldering?',
@@ -219,7 +330,7 @@ const isMainModule =
 
 if (isMainModule) {
   const runMain = async () => {
-    await createVectorStore();
+    await createVectorStoreWithChromaDB();
     await testVectorStore();
   };
 

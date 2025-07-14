@@ -3,17 +3,23 @@
 ## Project Description
 This project delivers a CLI chatbot that uses Retrieval-Augmented Generation (RAG) to answer questions based on Zonneplan's knowledge base articles (HTML). The bot can retrieve relevant information, generate accurate answers, add source citations, and provide a fallback if no results are available.
 
+## Prerequisites
+- **Docker**: Required for running ChromaDB
+- **Node.js**: v18+ (LTS recommended)
+- **pnpm**: Package manager (install via `npm install -g pnpm`)
+- **OpenAI API Key**: Required for embeddings and LLM generation
+
 ## Tech Stack
 - Runtime & language: Node.js (v18+) with TypeScript
 - Orchestration & RAG: LangChain.js (simplified imports for compatibility)
 - HTML parsing: Cheerio (`CheerioWebBaseLoader`)
-- Vector database: MemoryVectorStore (cross-platform compatible)
+- Vector database: ChromaDB (Docker-based)
+- Vector store fallback: MemoryVectorStore (JSON-based for cross-platform compatibility)
 - Embedding model: OpenAI `text-embedding-3-small`
 - LLM for generation: OpenAI `gpt-4o-mini`
 - CLI interface: Inquirer.js
 - Environment variables: dotenv
 
-> Note: All code and comments are written in English for maximum compatibility.
 
 ## Installation Instructions
 1. Clone the repository
@@ -25,11 +31,34 @@ This project delivers a CLI chatbot that uses Retrieval-Augmented Generation (RA
    ```bash
    pnpm install
    ```
-3. Create a `.env` file in the project root with the following content:
-   ```env
-   OPENAI_API_KEY=your_openai_api_key
+3. Copy the environment template
+   ```bash
+   cp .env.example .env
    ```
+   Update `.env` with your OpenAI API key and ChromaDB settings if needed.
 4. Ensure you have the `data/` folder with all unzipped HTML articles.
+
+## Running the Project
+1. **Start ChromaDB** (Docker required):
+   ```bash
+   docker compose up -d
+   ```
+   This will start ChromaDB on `localhost:8000` with persistent storage.
+2. **Ingest Data**:
+   ```bash
+   pnpm ingest
+   ```
+   This will parse HTML files, generate embeddings, and create the vector store.
+3. **Start the Chatbot**:
+   ```bash
+   pnpm chat
+   ```
+   This will launch an interactive CLI chatbot that can answer questions based on the knowledge base.
+4. **Run Tests**:
+   ```bash
+   pnpm test
+   ```
+   This will execute tests on the RAG pipeline and ensure everything is functioning correctly.
 
 ## Project Structure
 ```
@@ -42,10 +71,12 @@ This project delivers a CLI chatbot that uses Retrieval-Augmented Generation (RA
 │   ├── interactive.ts             # Interactive CLI interface
 │   └── index.ts                   # Main entry point
 ├── tests/
-│   └── rag-tests.ts              # Comprehensive test suite
+│   ├── chat.tests.ts
+│   └── rag.tests.ts
 ├── storage/
+│   ├── chromadb/                  # ChromaDB persistent storage
 │   └── vectorstore.faiss.json    # Persistent Memory vector store
-├── .env                          # Environment variables (not committed)
+├── .env                          # Environment variables
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -60,7 +91,7 @@ This project delivers a CLI chatbot that uses Retrieval-Augmented Generation (RA
    - Loads all HTML files from `data/`
    - Parses and splits them into overlapping chunks
    - Generates embeddings via OpenAI
-   - Builds and saves the Memory vector store to `storage/vectorstore.faiss.json`
+   - Builds and saves the vector store
 
 2. **Start Interactive Chatbot**
    ```bash
