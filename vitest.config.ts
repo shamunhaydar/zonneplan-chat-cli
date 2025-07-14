@@ -6,10 +6,10 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.{test,spec}.{js,ts}'],
     exclude: ['tests/**/*.integration.{test,spec}.{js,ts}'],
-    testTimeout: 10000,
+    testTimeout: 10_000,
     setupFiles: ['tests/setup.ts'],
     typecheck: {
-      tsconfig: './tsconfig.json'
-    }
+      tsconfig: './tsconfig.json',
+    },
   },
 });

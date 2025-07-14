@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RAGChatbot } from '../src/chat.js';
+/** biome-ignore-all lint/suspicious/noExplicitAny: <explanation> */
 import { Document } from 'langchain/document';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { RAGChatbot } from '../src/chat.js';
 
 // Mock external dependencies completely
 vi.mock('@langchain/openai');
@@ -33,7 +34,7 @@ describe('RAGChatbot Core Functionality', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Create comprehensive mocks
     mockLLM = {
       invoke: vi.fn(),
@@ -62,7 +63,10 @@ describe('RAGChatbot Core Functionality', () => {
 
       const result = await chatbot.retrieveRelevantDocuments('solar panels');
 
-      expect(mockVectorStore.similaritySearch).toHaveBeenCalledWith('solar panels', 5);
+      expect(mockVectorStore.similaritySearch).toHaveBeenCalledWith(
+        'solar panels',
+        5
+      );
       expect(result).toEqual(mockDocs);
     });
 
@@ -72,7 +76,9 @@ describe('RAGChatbot Core Functionality', () => {
 
       await expect(
         emptyBot.retrieveRelevantDocuments('test query')
-      ).rejects.toThrow('Vector store not loaded. Call loadVectorStore() first.');
+      ).rejects.toThrow(
+        'Vector store not loaded. Call loadVectorStore() first.'
+      );
     });
 
     it('should respect custom topK parameter', async () => {
@@ -91,7 +97,8 @@ describe('RAGChatbot Core Functionality', () => {
       const result = await chatbot.generateAnswer('irrelevant query');
 
       expect(result).toEqual({
-        answer: 'Ik kan deze vraag niet beantwoorden op basis van de beschikbare informatie. Probeer een andere vraag over zonnepanelen, energie of financiering.',
+        answer:
+          'Ik kan deze vraag niet beantwoorden op basis van de beschikbare informatie. Probeer een andere vraag over zonnepanelen, energie of financiering.',
         sources: [],
         foundRelevantInfo: false,
       });
@@ -108,12 +115,17 @@ describe('RAGChatbot Core Functionality', () => {
 
       mockVectorStore.similaritySearch.mockResolvedValue(mockDocs);
       mockLLM.invoke.mockResolvedValue({
-        content: 'Ja, zonnepanelen zijn een uitstekende bron van hernieuwbare energie.',
+        content:
+          'Ja, zonnepanelen zijn een uitstekende bron van hernieuwbare energie.',
       });
 
-      const result = await chatbot.generateAnswer('Zijn zonnepanelen duurzaam?');
+      const result = await chatbot.generateAnswer(
+        'Zijn zonnepanelen duurzaam?'
+      );
 
-      expect(result.answer).toBe('Ja, zonnepanelen zijn een uitstekende bron van hernieuwbare energie.');
+      expect(result.answer).toBe(
+        'Ja, zonnepanelen zijn een uitstekende bron van hernieuwbare energie.'
+      );
       expect(result.sources).toEqual(['solar.html']);
       expect(result.foundRelevantInfo).toBe(true);
     });
@@ -156,7 +168,9 @@ describe('RAGChatbot Core Functionality', () => {
 
       const result = await chatbot.generateAnswer('test query');
 
-      expect(result.answer).toBe('Sorry, er is een fout opgetreden bij het verwerken van je vraag. Probeer het later nog eens.');
+      expect(result.answer).toBe(
+        'Sorry, er is een fout opgetreden bij het verwerken van je vraag. Probeer het later nog eens.'
+      );
       expect(result.sources).toEqual([]);
       expect(result.foundRelevantInfo).toBe(false);
     });
@@ -208,9 +222,11 @@ describe('RAGChatbot Core Functionality', () => {
 
       expect(mockLLM.invoke).toHaveBeenCalledTimes(1);
       const promptArg = mockLLM.invoke.mock.calls[0][0];
-      
+
       // Verify key elements of Dutch prompt
-      expect(promptArg).toContain('Je bent een behulpzame AI-assistent van Zonneplan');
+      expect(promptArg).toContain(
+        'Je bent een behulpzame AI-assistent van Zonneplan'
+      );
       expect(promptArg).toContain('Gebruik ALLEEN de onderstaande context');
       expect(promptArg).toContain('Beantwoord in het Nederlands');
       expect(promptArg).toContain('Test content for prompt');

@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+/** biome-ignore-all lint/performance/noDelete: <explanation> */
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { config } from '../src/config.js';
 
 // Mock dotenv
@@ -57,7 +58,7 @@ describe('Config', () => {
 
     // Re-import config to get updated values
     vi.resetModules();
-    
+
     expect(process.env.OPENAI_API_KEY).toBe('test-key');
     expect(process.env.CHAT_MODEL).toBe('gpt-4');
     expect(process.env.EMBEDDINGS_MODEL).toBe('text-embedding-ada-002');
