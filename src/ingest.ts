@@ -12,8 +12,6 @@ import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { MemoryVectorStore } from 'langchain/vectorstores/memory';
 import { config } from './config.js';
 
-const OPENAI_API_KEY_REGEX = /OPENAI_API_KEY=(.+)/;
-
 export async function loadDocuments(): Promise<Document[]> {
   console.log('Loading documents from:', config.dataPath);
 
@@ -23,10 +21,7 @@ export async function loadDocuments(): Promise<Document[]> {
 
     console.log(`Found ${htmlFiles.length} HTML files`);
 
-    const allDocuments: Document[] = [];
-    let totalProcessed = 0;
-
-    for (const fileName of htmlFiles) {
+    const processFile = async (fileName: string): Promise<Document[]> => {
       try {
         const filePath = join(config.dataPath, fileName);
         console.log(`Processing: ${fileName}`);
@@ -55,7 +50,7 @@ export async function loadDocuments(): Promise<Document[]> {
 
         if (docs.length === 0 || !docs[0].pageContent.trim()) {
           console.log(`⚠️  No content found in ${fileName}, skipping`);
-          continue;
+          return [];
         }
 
         const splitter = new RecursiveCharacterTextSplitter({
@@ -77,14 +72,22 @@ export async function loadDocuments(): Promise<Document[]> {
             })
         );
 
-        allDocuments.push(...documentsWithMetadata);
-        totalProcessed++;
-
         console.log(`✓ ${fileName}: ${chunks.length} chunks created`);
+        return documentsWithMetadata;
       } catch (_error) {
         console.error(`❌ Error processing ${fileName}:`, _error);
+        return [];
       }
-    }
+    };
+
+    const allDocumentArrays = await Promise.all(
+      htmlFiles.map((fileName) => processFile(fileName))
+    );
+
+    const allDocuments = allDocumentArrays.flat();
+    const totalProcessed = allDocumentArrays.filter(
+      (docs) => docs.length > 0
+    ).length;
 
     console.log('\n📊 Summary:');
     console.log(`- Files processed: ${totalProcessed}/${htmlFiles.length}`);
@@ -190,18 +193,22 @@ export async function testVectorStore(): Promise<void> {
     'zonnepanelen lening',
   ];
 
-  for (const query of testQueries) {
-    console.log(`\nQuery: "${query}"`);
-    const results = await vectorStore.similaritySearch(query, 2);
+  const searchResults = await Promise.all(
+    testQueries.map(async (query) => {
+      console.log(`\nQuery: "${query}"`);
+      const results = await vectorStore.similaritySearch(query, 2);
 
-    results.forEach((result, index) => {
-      console.log(
-        `  ${index + 1}. [${result.metadata.source}] ${result.pageContent.substring(0, 100)}...`
-      );
-    });
-  }
+      results.forEach((result, index) => {
+        console.log(
+          `  ${index + 1}. [${result.metadata.source}] ${result.pageContent.substring(0, 100)}...`
+        );
+      });
 
-  console.log('\n✅ Vector store test completed!');
+      return { query, results };
+    })
+  );
+
+  console.log(`\n✅ Tested ${searchResults.length} queries successfully`);
 }
 
 const isMainModule =
@@ -212,15 +219,6 @@ const isMainModule =
 
 if (isMainModule) {
   const runMain = async () => {
-    // Set environment variable directly if not set by dotenv
-    if (!process.env.OPENAI_API_KEY) {
-      const envContent = await readFileAsync('.env', 'utf-8').catch(() => '');
-      const match = envContent.match(OPENAI_API_KEY_REGEX);
-      if (match) {
-        process.env.OPENAI_API_KEY = match[1].trim();
-      }
-    }
-
     await createVectorStore();
     await testVectorStore();
   };

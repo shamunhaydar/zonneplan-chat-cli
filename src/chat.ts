@@ -4,8 +4,6 @@ import { Document } from 'langchain/document';
 import { MemoryVectorStore } from 'langchain/vectorstores/memory';
 import { config } from './config.js';
 
-const OPENAI_API_KEY_REGEX = /OPENAI_API_KEY=(.+)/;
-
 export interface ChatResponse {
   answer: string;
   sources: string[];
@@ -146,20 +144,8 @@ Antwoord:`;
   }
 }
 
-async function setupEnvironment(): Promise<void> {
-  if (!process.env.OPENAI_API_KEY) {
-    const envContent = await readFileAsync('.env', 'utf-8').catch(() => '');
-    const match = envContent.match(OPENAI_API_KEY_REGEX);
-    if (match) {
-      process.env.OPENAI_API_KEY = match[1].trim();
-    }
-  }
-}
-
 export async function startChat() {
   console.log('🤖 Starting RAG Chatbot...');
-
-  await setupEnvironment();
 
   const chatbot = new RAGChatbot();
   await chatbot.loadVectorStore();

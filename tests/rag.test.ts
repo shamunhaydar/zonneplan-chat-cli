@@ -1,7 +1,4 @@
-import { readFile as readFileAsync } from 'node:fs/promises';
 import { RAGChatbot } from '../src/chat.js';
-
-const OPENAI_API_KEY_REGEX = /OPENAI_API_KEY=(.+)/;
 
 interface TestCase {
   query: string;
@@ -20,15 +17,6 @@ class TestRunner {
   }
 
   async setup(): Promise<void> {
-    // Set up environment
-    if (!process.env.OPENAI_API_KEY) {
-      const envContent = await readFileAsync('.env', 'utf-8').catch(() => '');
-      const match = envContent.match(OPENAI_API_KEY_REGEX);
-      if (match) {
-        process.env.OPENAI_API_KEY = match[1].trim();
-      }
-    }
-
     await this.chatbot.loadVectorStore();
   }
 
@@ -131,9 +119,7 @@ class TestRunner {
       },
     ];
 
-    for (const testCase of testCases) {
-      await this.runTest(testCase);
-    }
+    await Promise.all(testCases.map((testCase) => this.runTest(testCase)));
 
     // Summary
     console.log('\n📊 Test Results:');

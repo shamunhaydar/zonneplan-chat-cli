@@ -1,18 +1,5 @@
 import { RAGChatbot } from '../src/chat.js';
 
-const OPENAI_API_KEY_REGEX = /OPENAI_API_KEY=(.+)/;
-
-async function setupEnvironment(): Promise<void> {
-  if (!process.env.OPENAI_API_KEY) {
-    const { readFile } = await import('node:fs/promises');
-    const envContent = await readFile('.env', 'utf-8').catch(() => '');
-    const match = envContent.match(OPENAI_API_KEY_REGEX);
-    if (match) {
-      process.env.OPENAI_API_KEY = match[1].trim();
-    }
-  }
-}
-
 async function testRAGPipeline(): Promise<void> {
   console.log('\n🧪 Testing RAG Pipeline...');
 
@@ -26,23 +13,28 @@ async function testRAGPipeline(): Promise<void> {
   const chatbot = new RAGChatbot();
   await chatbot.loadVectorStore();
 
-  for (const query of testQueries) {
-    console.log(`\n❓ Query: "${query}"`);
-    const response = await chatbot.generateAnswer(query);
+  const results = await Promise.all(
+    testQueries.map(async (query) => {
+      console.log(`\n❓ Query: "${query}"`);
+      const response = await chatbot.generateAnswer(query);
 
-    console.log(`💬 Answer: ${response.answer}`);
+      console.log(`💬 Answer: ${response.answer}`);
 
-    if (response.foundRelevantInfo) {
-      console.log(`📚 Sources: ${response.sources.join(', ')}`);
-    } else {
-      console.log('📚 No relevant sources found');
-    }
-  }
+      if (response.foundRelevantInfo) {
+        console.log(`📚 Sources: ${response.sources.join(', ')}`);
+      } else {
+        console.log('📚 No relevant sources found');
+      }
+
+      return { query, response };
+    })
+  );
+
+  console.log(`\n✅ Completed ${results.length} test queries`);
 }
 
 async function main() {
   try {
-    await setupEnvironment();
     await testRAGPipeline();
     console.log('\n✅ All tests completed successfully');
   } catch (error) {
