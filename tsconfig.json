@@ -10,7 +10,7 @@
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "types": ["node"],
+    "types": ["node", "vitest/globals"],
     "declaration": true,
     "sourceMap": true,
     "allowImportingTsExtensions": false
