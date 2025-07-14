@@ -28,6 +28,7 @@ coverage/
 
 # FAISS vector store
 vectorstore.faiss
+vectorstore.faiss.json
 
 # Misc
 *.tgz
