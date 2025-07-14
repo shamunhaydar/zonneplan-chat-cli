@@ -110,7 +110,13 @@ Voorbeelden:
 }
 
 // Start the interactive chat when run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+const isMainModule = process.argv[1] && (
+  import.meta.url === `file://${process.argv[1]}` || 
+  import.meta.url.includes(process.argv[1].replace(/\\/g, '/')) ||
+  process.argv[1].includes('interactive.js')
+);
+
+if (isMainModule) {
   const runChat = async () => {
     const chatbot = new InteractiveChatbot();
     await chatbot.start();

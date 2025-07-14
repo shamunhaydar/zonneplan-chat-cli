@@ -147,7 +147,13 @@ class TestRunner {
 }
 
 // Run tests when executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+const isMainModule = process.argv[1] && (
+  import.meta.url === `file://${process.argv[1]}` || 
+  import.meta.url.includes(process.argv[1].replace(/\\/g, '/')) ||
+  process.argv[1].includes('rag-tests.js')
+);
+
+if (isMainModule) {
   const runner = new TestRunner();
   
   runner.setup()

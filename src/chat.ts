@@ -173,7 +173,13 @@ export async function startChat() {
 }
 
 // Test the RAG pipeline when run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+const isMainModule = process.argv[1] && (
+  import.meta.url === `file://${process.argv[1]}` || 
+  import.meta.url.includes(process.argv[1].replace(/\\/g, '/')) ||
+  process.argv[1].includes('chat.js')
+);
+
+if (isMainModule) {
   const runTest = async () => {
     await setupEnvironment();
     

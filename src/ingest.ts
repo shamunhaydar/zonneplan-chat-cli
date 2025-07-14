@@ -8,15 +8,6 @@ import { Document } from "langchain/document";
 import { writeFile, readFile as readFileAsync } from 'fs/promises';
 import { config } from './config.js';
 
-interface DocumentChunk {
-  content: string;
-  metadata: {
-    source: string;
-    title: string;
-    chunkIndex: number;
-  };
-}
-
 export async function loadDocuments(): Promise<Document[]> {
   console.log('Loading documents from:', config.dataPath);
   
@@ -184,7 +175,13 @@ export async function testVectorStore(): Promise<void> {
   console.log('\n✅ Vector store test completed!');
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const isMainModule = process.argv[1] && (
+  import.meta.url === `file://${process.argv[1]}` || 
+  import.meta.url.includes(process.argv[1].replace(/\\/g, '/')) ||
+  process.argv[1].includes('ingest.js')
+);
+
+if (isMainModule) {
   const runMain = async () => {
     // Set environment variable directly if not set by dotenv
     if (!process.env.OPENAI_API_KEY) {
