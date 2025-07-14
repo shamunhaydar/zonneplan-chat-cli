@@ -1,10 +1,12 @@
 import { RAGChatbot } from '../src/chat.js';
 
+const OPENAI_API_KEY_REGEX = /OPENAI_API_KEY=(.+)/;
+
 async function setupEnvironment(): Promise<void> {
   if (!process.env.OPENAI_API_KEY) {
     const { readFile } = await import('node:fs/promises');
     const envContent = await readFile('.env', 'utf-8').catch(() => '');
-    const match = envContent.match(/OPENAI_API_KEY=(.+)/);
+    const match = envContent.match(OPENAI_API_KEY_REGEX);
     if (match) {
       process.env.OPENAI_API_KEY = match[1].trim();
     }

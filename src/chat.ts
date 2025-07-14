@@ -4,6 +4,8 @@ import { Document } from 'langchain/document';
 import { MemoryVectorStore } from 'langchain/vectorstores/memory';
 import { config } from './config.js';
 
+const OPENAI_API_KEY_REGEX = /OPENAI_API_KEY=(.+)/;
+
 export interface ChatResponse {
   answer: string;
   sources: string[];
@@ -44,7 +46,7 @@ export class RAGChatbot {
       );
 
       const documents = vectorData.documents.map(
-        (doc: any) =>
+        (doc: { pageContent: string; metadata: Record<string, unknown> }) =>
           new Document({
             pageContent: doc.pageContent,
             metadata: doc.metadata,
@@ -147,7 +149,7 @@ Antwoord:`;
 async function setupEnvironment(): Promise<void> {
   if (!process.env.OPENAI_API_KEY) {
     const envContent = await readFileAsync('.env', 'utf-8').catch(() => '');
-    const match = envContent.match(/OPENAI_API_KEY=(.+)/);
+    const match = envContent.match(OPENAI_API_KEY_REGEX);
     if (match) {
       process.env.OPENAI_API_KEY = match[1].trim();
     }

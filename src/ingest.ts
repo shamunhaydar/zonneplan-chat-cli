@@ -12,6 +12,8 @@ import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { MemoryVectorStore } from 'langchain/vectorstores/memory';
 import { config } from './config.js';
 
+const OPENAI_API_KEY_REGEX = /OPENAI_API_KEY=(.+)/;
+
 export async function loadDocuments(): Promise<Document[]> {
   console.log('Loading documents from:', config.dataPath);
 
@@ -79,8 +81,8 @@ export async function loadDocuments(): Promise<Document[]> {
         totalProcessed++;
 
         console.log(`✓ ${fileName}: ${chunks.length} chunks created`);
-      } catch (error) {
-        console.error(`❌ Error processing ${fileName}:`, error);
+      } catch (_error) {
+        console.error(`❌ Error processing ${fileName}:`, _error);
       }
     }
 
@@ -157,7 +159,7 @@ export async function loadVectorStore(): Promise<MemoryVectorStore> {
     );
 
     const documents = vectorData.documents.map(
-      (doc: any) =>
+      (doc: { pageContent: string; metadata: Record<string, unknown> }) =>
         new Document({
           pageContent: doc.pageContent,
           metadata: doc.metadata,
@@ -171,7 +173,7 @@ export async function loadVectorStore(): Promise<MemoryVectorStore> {
 
     console.log(`✅ Loaded vector store with ${documents.length} documents`);
     return vectorStore;
-  } catch (error) {
+  } catch (_error) {
     console.log('⚠️  No existing vector store found, creating new one...');
     return await createVectorStore();
   }
@@ -213,7 +215,7 @@ if (isMainModule) {
     // Set environment variable directly if not set by dotenv
     if (!process.env.OPENAI_API_KEY) {
       const envContent = await readFileAsync('.env', 'utf-8').catch(() => '');
-      const match = envContent.match(/OPENAI_API_KEY=(.+)/);
+      const match = envContent.match(OPENAI_API_KEY_REGEX);
       if (match) {
         process.env.OPENAI_API_KEY = match[1].trim();
       }
