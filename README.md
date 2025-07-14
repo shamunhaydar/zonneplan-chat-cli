@@ -19,6 +19,8 @@ This project delivers a CLI chatbot that uses Retrieval-Augmented Generation (RA
 - LLM for generation: OpenAI `gpt-4o-mini`
 - CLI interface: Inquirer.js
 - Environment variables: dotenv
+- Testing: Vitest with comprehensive mocking
+- Code formatting: Biome (via ultracite)
 
 
 ## Installation Instructions
@@ -65,20 +67,33 @@ This project delivers a CLI chatbot that uses Retrieval-Augmented Generation (RA
 .
 ├── data/                          # HTML knowledge base articles
 ├── src/
+│   ├── processors/
+│   │   └── document-processor.ts  # HTML processing and chunking
+│   ├── testing/
+│   │   └── vector-store-test.ts   # Vector store testing utilities
+│   ├── utils/
+│   │   ├── crypto.ts              # Cryptographic utilities
+│   │   └── storage.ts             # Storage management utilities
+│   ├── vector-store/
+│   │   └── vector-store.ts        # Vector store creation and management
 │   ├── config.ts                  # Configuration and environment setup
 │   ├── ingest.ts                  # Data ingestion + vector store creation
 │   ├── chat.ts                    # Core RAG pipeline implementation
 │   ├── interactive.ts             # Interactive CLI interface
 │   └── index.ts                   # Main entry point
 ├── tests/
-│   ├── chat.tests.ts
-│   └── rag.tests.ts
+│   ├── chatbot.test.ts            # RAG chatbot tests
+│   ├── config.test.ts             # Configuration tests
+│   └── setup.ts                   # Test setup configuration
 ├── storage/
 │   ├── chromadb/                  # ChromaDB persistent storage
 │   └── vectorstore.faiss.json    # Persistent Memory vector store
-├── .env                          # Environment variables
+├── .env.example                   # Environment variables template
+├── biome.jsonc                    # Biome configuration
+├── docker-compose.yml             # ChromaDB Docker setup
 ├── package.json
 ├── tsconfig.json
+├── vitest.config.ts               # Test configuration
 └── README.md
 ```
 
@@ -103,18 +118,21 @@ This project delivers a CLI chatbot that uses Retrieval-Augmented Generation (RA
    - Provides conversation history and source citations
    - Supports commands: help, clear, quit/exit
 
-3. **Run Tests**
-   ```bash
-   pnpm test
-   ```
-   Runs comprehensive tests on the RAG pipeline with various queries
+3. **Run Tests**:
+    ```bash
+    pnpm test
+    ```
+    Runs comprehensive tests on the RAG pipeline with various queries
 
-4. **Test RAG Pipeline Only**
-   ```bash
-   pnpm test-rag
-   ```
-   Tests the core RAG functionality without interactive CLI
-
+4. **Additional Scripts**:
+    ```bash
+    pnpm build         # Compile TypeScript to JavaScript
+    pnpm dev           # Build and run main application
+    pnpm test:watch    # Run tests in watch mode
+    pnpm test:ui       # Run tests with UI interface
+    pnpm lint          # Lint code with Biome
+    pnpm format        # Format code with Biome
+    ```
 ## Architecture
 
 ### WSL/Windows Compatibility
