@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "dev": "pnpm build && node dist/index.js",
-    "ingest": "pnpm build && node dist/ingest.js",
-    "chat": "pnpm build && node dist/interactive.js",
-    "test-rag": "pnpm build && node dist/chat.js",
+    "dev": "pnpm build && node dist/src/index.js",
+    "ingest": "pnpm build && node dist/src/ingest.js",
+    "chat": "pnpm build && node dist/src/interactive.js",
+    "test-rag": "pnpm build && node dist/src/chat.js",
     "test": "pnpm build && node dist/tests/rag-tests.js",
     "lint": "biome check src/",
     "lint:fix": "biome check --write src/"

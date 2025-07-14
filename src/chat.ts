@@ -2,13 +2,10 @@ import { ChatOpenAI } from "@langchain/openai";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { Document } from "langchain/document";
-import { PromptTemplate } from "@langchain/core/prompts";
-import { StringOutputParser } from "@langchain/core/output_parsers";
-import { RunnableSequence } from "@langchain/core/runnables";
 import { readFile as readFileAsync } from 'fs/promises';
 import { config } from './config.js';
 
-interface ChatResponse {
+export interface ChatResponse {
   answer: string;
   sources: string[];
   foundRelevantInfo: boolean;
@@ -65,15 +62,15 @@ export class RAGChatbot {
     return results;
   }
 
-  private createRAGPrompt(): PromptTemplate {
-    const template = `Je bent een behulpzame AI-assistent van Zonneplan die vragen beantwoordt over zonnepanelen, energie en financiering.
+  private createPrompt(context: string, question: string): string {
+    return `Je bent een behulpzame AI-assistent van Zonneplan die vragen beantwoordt over zonnepanelen, energie en financiering.
 
 Gebruik ALLEEN de onderstaande context om de vraag te beantwoorden. Als de informatie niet in de context staat, zeg dan eerlijk dat je het niet weet.
 
 Context:
-{context}
+${context}
 
-Vraag: {question}
+Vraag: ${question}
 
 Instructies:
 - Beantwoord in het Nederlands
@@ -83,8 +80,6 @@ Instructies:
 - Als je het antwoord niet weet op basis van de context, zeg dan: "Ik kan deze vraag niet beantwoorden op basis van de beschikbare informatie."
 
 Antwoord:`;
-
-    return PromptTemplate.fromTemplate(template);
   }
 
   async generateAnswer(query: string): Promise<ChatResponse> {
@@ -110,24 +105,12 @@ Antwoord:`;
 
     console.log(`📄 Found ${relevantDocs.length} relevant chunks from ${sources.length} sources`);
 
-    // Create RAG chain
-    const prompt = this.createRAGPrompt();
-    const outputParser = new StringOutputParser();
-
-    const ragChain = RunnableSequence.from([
-      prompt,
-      this.llm,
-      outputParser,
-    ]);
-
     try {
-      const answer = await ragChain.invoke({
-        context: context,
-        question: query,
-      });
+      const prompt = this.createPrompt(context, query);
+      const response = await this.llm.invoke(prompt);
 
       return {
-        answer: answer.trim(),
+        answer: response.content.toString().trim(),
         sources,
         foundRelevantInfo: true
       };

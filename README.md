@@ -5,9 +5,9 @@ This project delivers a CLI chatbot that uses Retrieval-Augmented Generation (RA
 
 ## Tech Stack
 - Runtime & language: Node.js (v18+) with TypeScript
-- Orchestration & RAG: LangChain.js
+- Orchestration & RAG: LangChain.js (simplified imports for compatibility)
 - HTML parsing: Cheerio (`CheerioWebBaseLoader`)
-- Vector database: FAISS (local, via `faiss-node`)
+- Vector database: MemoryVectorStore (cross-platform compatible)
 - Embedding model: OpenAI `text-embedding-3-small`
 - LLM for generation: OpenAI `gpt-4o-mini`
 - CLI interface: Inquirer.js
@@ -36,11 +36,16 @@ This project delivers a CLI chatbot that uses Retrieval-Augmented Generation (RA
 .
 ├── data/                          # HTML knowledge base articles
 ├── src/
-│   ├── ingest.ts                  # Ingestion + chunking + FAISS build
-│   └── chat.ts                    # CLI chatbot with RAG pipeline
+│   ├── config.ts                  # Configuration and environment setup
+│   ├── ingest.ts                  # Data ingestion + vector store creation
+│   ├── chat.ts                    # Core RAG pipeline implementation
+│   ├── interactive.ts             # Interactive CLI interface
+│   └── index.ts                   # Main entry point
+├── tests/
+│   └── rag-tests.ts              # Comprehensive test suite
 ├── storage/
-│   └── vectorstore.faiss          # Persistent FAISS index
-├── .env                           # Environment variables (not committed)
+│   └── vectorstore.faiss.json    # Persistent Memory vector store
+├── .env                          # Environment variables (not committed)
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -55,7 +60,7 @@ This project delivers a CLI chatbot that uses Retrieval-Augmented Generation (RA
    - Loads all HTML files from `data/`
    - Parses and splits them into overlapping chunks
    - Generates embeddings via OpenAI
-   - Builds and saves the Memory vector store to `vectorstore.faiss.json`
+   - Builds and saves the Memory vector store to `storage/vectorstore.faiss.json`
 
 2. **Start Interactive Chatbot**
    ```bash
@@ -78,24 +83,6 @@ This project delivers a CLI chatbot that uses Retrieval-Augmented Generation (RA
    pnpm test-rag
    ```
    Tests the core RAG functionality without interactive CLI
-
-## Project Structure
-```
-.
-├── data/                          # HTML knowledge base articles
-├── src/
-│   ├── config.ts                  # Configuration and environment setup
-│   ├── ingest.ts                  # Data ingestion + vector store creation
-│   ├── chat.ts                    # Core RAG pipeline implementation
-│   └── interactive.ts             # Interactive CLI interface
-├── tests/
-│   └── rag-tests.ts              # Comprehensive test suite
-├── vectorstore.faiss.json        # Persistent Memory vector store
-├── .env                          # Environment variables (not committed)
-├── package.json
-├── tsconfig.json
-└── README.md
-```
 
 ## Architecture
 

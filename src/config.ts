@@ -8,5 +8,5 @@ export const config = {
   chunkOverlap: 200,
   topK: 5,
   dataPath: './data',
-  vectorStorePath: './vectorstore.faiss'
+  vectorStorePath: './storage/vectorstore.faiss'
 };
