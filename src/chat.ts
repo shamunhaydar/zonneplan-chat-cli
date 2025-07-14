@@ -142,33 +142,8 @@ Antwoord:`;
       };
     }
   }
-
-  async testRAGPipeline(): Promise<void> {
-    console.log('\n🧪 Testing RAG Pipeline...');
-
-    const testQueries = [
-      'Wat is saldering bij zonnepanelen?',
-      'Hoe werkt de terugleververgoeding?',
-      'Kan ik een lening krijgen voor zonnepanelen?',
-      'Wat kost een elektriciteitsauto?', // Should return "not found"
-    ];
-
-    for (const query of testQueries) {
-      console.log(`\n❓ Query: "${query}"`);
-      const response = await this.generateAnswer(query);
-
-      console.log(`💬 Answer: ${response.answer}`);
-
-      if (response.foundRelevantInfo) {
-        console.log(`📚 Sources: ${response.sources.join(', ')}`);
-      } else {
-        console.log('📚 No relevant sources found');
-      }
-    }
-  }
 }
 
-// Environment variable setup helper
 async function setupEnvironment(): Promise<void> {
   if (!process.env.OPENAI_API_KEY) {
     const envContent = await readFileAsync('.env', 'utf-8').catch(() => '');
@@ -188,26 +163,4 @@ export async function startChat() {
   await chatbot.loadVectorStore();
 
   return chatbot;
-}
-
-// Test the RAG pipeline when run directly
-const isMainModule =
-  process.argv[1] &&
-  (import.meta.url === `file://${process.argv[1]}` ||
-    import.meta.url.includes(process.argv[1].replace(/\\/g, '/')) ||
-    process.argv[1].includes('chat.js'));
-
-if (isMainModule) {
-  const runTest = async () => {
-    await setupEnvironment();
-
-    const chatbot = new RAGChatbot();
-    await chatbot.loadVectorStore();
-    await chatbot.testRAGPipeline();
-  };
-
-  runTest().catch((error) => {
-    console.error('❌ RAG Pipeline test failed:', error);
-    process.exit(1);
-  });
 }

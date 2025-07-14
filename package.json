@@ -8,8 +8,8 @@
     "dev": "pnpm build && node dist/src/index.js",
     "ingest": "pnpm build && node dist/src/ingest.js",
     "chat": "pnpm build && node dist/src/interactive.js",
-    "test": "pnpm build && node dist/src/chat.js",
-    "test-rag": "pnpm build && node dist/tests/rag.tests.js",
+    "test": "pnpm build && node dist/tests/chat.test.js",
+    "test-rag": "pnpm build && node dist/tests/rag.test.js",
     "lint": "ultracite lint",
     "format": "ultracite format"
   },
