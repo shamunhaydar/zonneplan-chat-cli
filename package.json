@@ -8,6 +8,7 @@
     "dev": "pnpm build && node dist/index.js",
     "ingest": "pnpm build && node dist/ingest.js",
     "chat": "pnpm build && node dist/chat.js",
+    "test-rag": "pnpm build && node dist/chat.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "biome check src/",
     "lint:fix": "biome check --write src/"
@@ -30,6 +31,7 @@
   },
   "dependencies": {
     "@langchain/community": "^0.3.48",
+    "@langchain/core": "^0.3.62",
     "@langchain/openai": "^0.5.18",
     "@types/inquirer": "^9.0.8",
     "cheerio": "^1.1.0",

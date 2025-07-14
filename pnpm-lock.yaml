@@ -11,6 +11,9 @@ importers:
       '@langchain/community':
         specifier: ^0.3.48
         version: 0.3.48(@browserbasehq/sdk@2.6.0)(@browserbasehq/stagehand@1.14.0(@playwright/test@1.54.1)(deepmerge@4.3.1)(dotenv@17.2.0)(openai@5.9.0(ws@8.18.3)(zod@3.25.76))(zod@3.25.76))(@ibm-cloud/watsonx-ai@1.6.8)(@langchain/core@0.3.62(openai@5.9.0(ws@8.18.3)(zod@3.25.76)))(axios@1.10.0)(cheerio@1.1.0)(ibm-cloud-sdk-core@5.4.0)(jsonwebtoken@9.0.2)(openai@5.9.0(ws@8.18.3)(zod@3.25.76))(playwright@1.54.1)(weaviate-client@3.6.2)(ws@8.18.3)
+      '@langchain/core':
+        specifier: ^0.3.62
+        version: 0.3.62(openai@5.9.0(ws@8.18.3)(zod@3.25.76))
       '@langchain/openai':
         specifier: ^0.5.18
         version: 0.5.18(@langchain/core@0.3.62(openai@5.9.0(ws@8.18.3)(zod@3.25.76)))(ws@8.18.3)
@@ -2818,7 +2821,7 @@ snapshots:
   axios@1.10.0(debug@4.4.1):
     dependencies:
       follow-redirects: 1.15.9(debug@4.4.1)
-      form-data: 4.0.0
+      form-data: 4.0.3
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
@@ -3208,7 +3211,7 @@ snapshots:
       isstream: 0.1.2
       jsonwebtoken: 9.0.2
       mime-types: 2.1.35
-      retry-axios: 2.6.0(axios@1.10.0(debug@4.4.1))
+      retry-axios: 2.6.0(axios@1.10.0)
       tough-cookie: 4.1.4
     transitivePeerDependencies:
       - supports-color
@@ -3551,7 +3554,7 @@ snapshots:
 
   requires-port@1.0.0: {}
 
-  retry-axios@2.6.0(axios@1.10.0(debug@4.4.1)):
+  retry-axios@2.6.0(axios@1.10.0):
     dependencies:
       axios: 1.10.0(debug@4.4.1)
 
