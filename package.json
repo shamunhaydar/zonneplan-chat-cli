@@ -7,7 +7,7 @@
     "build": "tsc",
     "dev": "pnpm build && node dist/index.js",
     "ingest": "pnpm build && node dist/ingest.js",
-    "chat": "pnpm build && node dist/chat.js",
+    "chat": "pnpm build && node dist/interactive.js",
     "test-rag": "pnpm build && node dist/chat.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "biome check src/",
