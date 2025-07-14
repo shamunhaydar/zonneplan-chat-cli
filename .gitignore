@@ -26,9 +26,10 @@ Thumbs.db
 coverage/
 *.lcov
 
-# FAISS vector store
+# Data files
 vectorstore.faiss
 vectorstore.faiss.json
+data/
 
 # Misc
 *.tgz

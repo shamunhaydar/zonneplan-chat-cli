@@ -1,8 +1,7 @@
-import { ChatOpenAI } from "@langchain/openai";
-import { OpenAIEmbeddings } from "@langchain/openai";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { Document } from "langchain/document";
-import { readFile as readFileAsync } from 'fs/promises';
+import { readFile as readFileAsync } from 'node:fs/promises';
+import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
+import { Document } from 'langchain/document';
+import { MemoryVectorStore } from 'langchain/vectorstores/memory';
 import { config } from './config.js';
 
 export interface ChatResponse {
@@ -18,42 +17,56 @@ export class RAGChatbot {
 
   constructor() {
     if (!config.openaiApiKey) {
-      throw new Error('OPENAI_API_KEY is required. Please set it in your .env file.');
+      throw new Error(
+        'OPENAI_API_KEY is required. Please set it in your .env file.'
+      );
     }
 
     this.llm = new ChatOpenAI({
       openAIApiKey: config.openaiApiKey,
-      modelName: "gpt-4o-mini",
+      modelName: 'gpt-4o-mini',
       temperature: 0.1,
       maxTokens: 500,
     });
 
     this.embeddings = new OpenAIEmbeddings({
       openAIApiKey: config.openaiApiKey,
-      modelName: "text-embedding-3-small",
+      modelName: 'text-embedding-3-small',
     });
   }
 
   async loadVectorStore(): Promise<void> {
     console.log('📖 Loading vector store...');
-    
+
     try {
-      const vectorData = JSON.parse(await readFileAsync(`${config.vectorStorePath}.json`, 'utf-8'));
-      
-      const documents = vectorData.documents.map((doc: any) => new Document({
-        pageContent: doc.pageContent,
-        metadata: doc.metadata
-      }));
-      
-      this.vectorStore = await MemoryVectorStore.fromDocuments(documents, this.embeddings);
+      const vectorData = JSON.parse(
+        await readFileAsync(`${config.vectorStorePath}.json`, 'utf-8')
+      );
+
+      const documents = vectorData.documents.map(
+        (doc: any) =>
+          new Document({
+            pageContent: doc.pageContent,
+            metadata: doc.metadata,
+          })
+      );
+
+      this.vectorStore = await MemoryVectorStore.fromDocuments(
+        documents,
+        this.embeddings
+      );
       console.log(`✅ Vector store loaded with ${documents.length} documents`);
-      
     } catch (error) {
-      throw new Error(`Failed to load vector store: ${error}. Please run 'pnpm ingest' first.`);
+      throw new Error(
+        `Failed to load vector store: ${error}. Please run 'pnpm ingest' first.`
+      );
     }
   }
 
-  async retrieveRelevantDocuments(query: string, topK: number = config.topK): Promise<Document[]> {
+  async retrieveRelevantDocuments(
+    query: string,
+    topK: number = config.topK
+  ): Promise<Document[]> {
     if (!this.vectorStore) {
       throw new Error('Vector store not loaded. Call loadVectorStore() first.');
     }
@@ -84,15 +97,16 @@ Antwoord:`;
 
   async generateAnswer(query: string): Promise<ChatResponse> {
     console.log(`🔍 Processing query: "${query}"`);
-    
+
     // Retrieve relevant documents
     const relevantDocs = await this.retrieveRelevantDocuments(query);
-    
+
     if (relevantDocs.length === 0) {
       return {
-        answer: "Ik kan deze vraag niet beantwoorden op basis van de beschikbare informatie. Probeer een andere vraag over zonnepanelen, energie of financiering.",
+        answer:
+          'Ik kan deze vraag niet beantwoorden op basis van de beschikbare informatie. Probeer een andere vraag over zonnepanelen, energie of financiering.',
         sources: [],
-        foundRelevantInfo: false
+        foundRelevantInfo: false,
       };
     }
 
@@ -101,9 +115,13 @@ Antwoord:`;
       .map((doc, index) => `[${index + 1}] ${doc.pageContent}`)
       .join('\n\n');
 
-    const sources = [...new Set(relevantDocs.map(doc => doc.metadata.source))];
+    const sources = [
+      ...new Set(relevantDocs.map((doc) => doc.metadata.source)),
+    ];
 
-    console.log(`📄 Found ${relevantDocs.length} relevant chunks from ${sources.length} sources`);
+    console.log(
+      `📄 Found ${relevantDocs.length} relevant chunks from ${sources.length} sources`
+    );
 
     try {
       const prompt = this.createPrompt(context, query);
@@ -112,39 +130,39 @@ Antwoord:`;
       return {
         answer: response.content.toString().trim(),
         sources,
-        foundRelevantInfo: true
+        foundRelevantInfo: true,
       };
-
     } catch (error) {
       console.error('Error generating answer:', error);
       return {
-        answer: "Sorry, er is een fout opgetreden bij het verwerken van je vraag. Probeer het later nog eens.",
+        answer:
+          'Sorry, er is een fout opgetreden bij het verwerken van je vraag. Probeer het later nog eens.',
         sources: [],
-        foundRelevantInfo: false
+        foundRelevantInfo: false,
       };
     }
   }
 
   async testRAGPipeline(): Promise<void> {
     console.log('\n🧪 Testing RAG Pipeline...');
-    
+
     const testQueries = [
-      "Wat is saldering bij zonnepanelen?",
-      "Hoe werkt de terugleververgoeding?",
-      "Kan ik een lening krijgen voor zonnepanelen?",
-      "Wat kost een elektriciteitsauto?", // Should return "not found"
+      'Wat is saldering bij zonnepanelen?',
+      'Hoe werkt de terugleververgoeding?',
+      'Kan ik een lening krijgen voor zonnepanelen?',
+      'Wat kost een elektriciteitsauto?', // Should return "not found"
     ];
 
     for (const query of testQueries) {
       console.log(`\n❓ Query: "${query}"`);
       const response = await this.generateAnswer(query);
-      
+
       console.log(`💬 Answer: ${response.answer}`);
-      
+
       if (response.foundRelevantInfo) {
         console.log(`📚 Sources: ${response.sources.join(', ')}`);
       } else {
-        console.log(`📚 No relevant sources found`);
+        console.log('📚 No relevant sources found');
       }
     }
   }
@@ -163,35 +181,32 @@ async function setupEnvironment(): Promise<void> {
 
 export async function startChat() {
   console.log('🤖 Starting RAG Chatbot...');
-  
+
   await setupEnvironment();
-  
+
   const chatbot = new RAGChatbot();
   await chatbot.loadVectorStore();
-  
+
   return chatbot;
 }
 
 // Test the RAG pipeline when run directly
-const isMainModule = process.argv[1] && (
-  import.meta.url === `file://${process.argv[1]}` || 
-  import.meta.url.includes(process.argv[1].replace(/\\/g, '/')) ||
-  process.argv[1].includes('chat.js')
-);
+const isMainModule =
+  process.argv[1] &&
+  (import.meta.url === `file://${process.argv[1]}` ||
+    import.meta.url.includes(process.argv[1].replace(/\\/g, '/')) ||
+    process.argv[1].includes('chat.js'));
 
 if (isMainModule) {
   const runTest = async () => {
     await setupEnvironment();
-    
+
     const chatbot = new RAGChatbot();
     await chatbot.loadVectorStore();
     await chatbot.testRAGPipeline();
-    
-    console.log(`\n🎉 Phase 4 RAG Pipeline completed successfully!`);
-    console.log(`Ready for Phase 5: CLI Integration`);
   };
-  
-  runTest().catch(error => {
+
+  runTest().catch((error) => {
     console.error('❌ RAG Pipeline test failed:', error);
     process.exit(1);
   });
