@@ -6,6 +6,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "pnpm build && node dist/index.js",
+    "ingest": "pnpm build && node dist/ingest.js",
+    "chat": "pnpm build && node dist/chat.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "biome check src/",
     "lint:fix": "biome check --write src/"
@@ -22,7 +24,17 @@
   "description": "A CLI for Zonneplan's GenAI chatbot",
   "devDependencies": {
     "@biomejs/biome": "2.1.1",
+    "@types/node": "^24.0.13",
     "typescript": "^5.8.3",
     "ultracite": "5.0.35"
+  },
+  "dependencies": {
+    "@langchain/openai": "^0.5.18",
+    "@types/inquirer": "^9.0.8",
+    "cheerio": "^1.1.0",
+    "dotenv": "^17.2.0",
+    "faiss-node": "^0.5.1",
+    "inquirer": "^12.7.0",
+    "langchain": "^0.3.29"
   }
 }

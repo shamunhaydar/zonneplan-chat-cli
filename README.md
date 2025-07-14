@@ -1,76 +1,75 @@
 # Zonneplan GenAI Chatbot
 
-## Projectbeschrijving  
-Dit project levert een CLI-chatbot die met behulp van Retrieval-Augmented Generation (RAG) vragen beantwoordt op basis van de Zonneplan kennisbank-artikelen (HTML). De bot kan relevante informatie ophalen, accurate antwoorden genereren, bronvermeldingen toevoegen en een fallback bieden als er geen resultaat beschikbaar is.
+## Project Description
+This project delivers a CLI chatbot that uses Retrieval-Augmented Generation (RAG) to answer questions based on Zonneplan's knowledge base articles (HTML). The bot can retrieve relevant information, generate accurate answers, add source citations, and provide a fallback if no results are available.
 
-## Tech Stack  
-- Runtime & taal: Node.js (v18+) met TypeScript  
-- Orchestration & RAG: LangChain.js  
-- HTML-parsing: Cheerio (`CheerioWebBaseLoader`)  
-- Vector database: FAISS (lokaal, via `faiss-node`)  
-- Embedding model: OpenAI `text-embedding-3-small`  
-- LLM voor generatie: OpenAI `gpt-4o-mini`  
-- CLI-interface: Inquirer.js  
-- Omgevingsvariabelen: dotenv
+## Tech Stack
+- Runtime & language: Node.js (v18+) with TypeScript
+- Orchestration & RAG: LangChain.js
+- HTML parsing: Cheerio (`CheerioWebBaseLoader`)
+- Vector database: FAISS (local, via `faiss-node`)
+- Embedding model: OpenAI `text-embedding-3-small`
+- LLM for generation: OpenAI `gpt-4o-mini`
+- CLI interface: Inquirer.js
+- Environment variables: dotenv
 
-> Let op: alle code en comments zijn in het Engels geschreven voor maximale compatibiliteit.
+> Note: All code and comments are written in English for maximum compatibility.
 
-## Installatie-instructies  
-1. Clone de repository  
+## Installation Instructions
+1. Clone the repository
    ```bash
    git clone https://github.com/shamunhaydar/zonneplan-chat-cli.git
    cd zonneplan-chat-cli
-   ```  
-2. Installeer dependencies  
+   ```
+2. Install dependencies
    ```bash
-   npm install
-   ```  
-3. Maak een `.env`-bestand in de projectroot met de volgende inhoud:  
+   pnpm install
+   ```
+3. Create a `.env` file in the project root with the following content:
    ```env
    OPENAI_API_KEY=your_openai_api_key
-   VECTORSTORE_PATH=./storage/vectorstore.faiss
-   ```  
-4. Zorg dat je de `data/`-map hebt met alle uitgepakte HTML-artikelen.
+   ```
+4. Ensure you have the `data/` folder with all unzipped HTML articles.
 
-## Projectstructuur  
+## Project Structure
 ```
 .
-├── data/                          # HTML kennisbank-artikelen
+├── data/                          # HTML knowledge base articles
 ├── src/
 │   ├── ingest.ts                  # Ingestion + chunking + FAISS build
-│   └── chat.ts                    # CLI-chatbot met RAG-pipeline
+│   └── chat.ts                    # CLI chatbot with RAG pipeline
 ├── storage/
-│   └── vectorstore.faiss          # Persistente FAISS-index
-├── .env                           # Omgevingsvariabelen (niet committed)
+│   └── vectorstore.faiss          # Persistent FAISS index
+├── .env                           # Environment variables (not committed)
 ├── package.json
 ├── tsconfig.json
 └── README.md
 ```
 
-## Gebruik  
-1. **Data Ingestion & Index Build**  
+## Usage
+1. **Data Ingestion & Index Build**
    ```bash
    npm run ingest
-   ```  
-   Dit script:
-   - Laadt alle HTML-bestanden uit `data/`
-   - Parseert en splitst ze in overlappingende chunks
-   - Genereert embeddings via OpenAI
-   - Bouwt en slaat de FAISS-index op in `storage/vectorstore.faiss`
+   ```
+   This script:
+   - Loads all HTML files from `data/`
+   - Parses and splits them into overlapping chunks
+   - Generates embeddings via OpenAI
+   - Builds and saves the FAISS index to `storage/vectorstore.faiss`
 
-2. **Chatbot starten**  
+2. **Start Chatbot**
    ```bash
    npm run chat
-   ```  
-   Dit script:
-   - Laadt de opgeslagen FAISS-index
-   - Start een Inquirer.js CLI-loop
-   - Embedt de vraag, zoekt relevante chunks, genereert antwoord met bronvermelding
-   - Gebruikt een fallback wanneer er geen relevante informatie gevonden wordt
+   ```
+   This script:
+   - Loads the saved FAISS index
+   - Starts an Inquirer.js CLI loop
+   - Embeds the question, searches for relevant chunks, generates an answer with source citations
+   - Uses a fallback when no relevant information is found
 
-## Succescriteria  
-Een werkend prototype voldoet aan:
-- Antwoorden op voorbeeldvragen uit de casus (bv. garantietermijn, omvormer werking)  
-- Correcte bronvermelding per antwoord  
-- Fallback-bericht wanneer geen match gevonden is  
-- Eenvoudige, stabiele CLI-ervaring  
+## Success Criteria
+A working prototype meets the following:
+- Answers to example questions from the case study (e.g., warranty period, inverter operation)
+- Correct source citation per answer
+- Fallback message when no match is found
+- Simple, stable CLI experience

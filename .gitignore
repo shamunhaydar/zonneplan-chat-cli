@@ -26,6 +26,9 @@ Thumbs.db
 coverage/
 *.lcov
 
+# FAISS vector store
+vectorstore.faiss
+
 # Misc
 *.tgz
 .kilocode/mcp.json
